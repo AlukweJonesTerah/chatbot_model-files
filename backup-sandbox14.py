@@ -580,31 +580,55 @@ def handle_person_entities(entities, context):
             break
 
 def handle_organization_entities(entities, context):
+    recognized_organizations = []
+
     for entity in entities:
         if entity.lower() == "organization":
-            # Extract organization name from user input (you may replace this with your entity extraction logic)
-            organization_name = extract_organization_name(context["user_input"])
+            # Extract organization names from user input
+            organization_names = extract_organization_names(context["user_input"])
 
-            # If organization name is not extracted, prompt the user to specify the organization
-            if not organization_name:
-                organization_name = input("You (Specify Organization): ")
+            # If organization names are not extracted, prompt the user to specify the organization
+            if not organization_names:
+                organization_names = [input("You (Specify Organization): ")]
 
             # Provide information and add logic for organization-specific actions
-            print(f"Chatbot: I have information about {organization_name}. What would you like to know?")
+            for organization_name in organization_names:
+                print(f"Chatbot: I have information about {organization_name}. What would you like to know?")
+                recognized_organizations.append(organization_name)
 
-            # Update context with the recognized organization name
-            context["recognized_organization"] = organization_name
-
-            # You can add additional logic or specific actions based on the recognized organization
+                # You can add additional logic or specific actions based on the recognized organization
 
             break
+
+    # Update context with the recognized organization names
+    context["recognized_organizations"] = recognized_organizations
+
+def extract_organization_names(text):
+    doc = nlp(text)
+    # Extract organization names using spaCy's named entity recognition
+    organization_names = [ent.text for ent in doc.ents if ent.label_ == "ORGANIZATION"]
+    return organization_names
+
 
 # Example usage:
 handle_organization_entities(["organization"], {"user_input": "Tell me about the organization"})
 
 def get_model_confidence(user_input):
-    # Your implementation to get model confidence
-    pass
+    # Preprocess user input
+    text_p = ' '.join([ltrs.lower() for ltrs in user_input.split() if ltrs not in string.punctuation])
+
+    # Tokenize and pad the input sequence
+    prediction_input = tokenizer.texts_to_sequences([text_p])
+    prediction_input = pad_sequences(prediction_input, maxlen=input_shape)
+
+    # Get model predictions
+    output = model.predict(prediction_input)
+
+    # Get the confidence associated with the predicted intent
+    max_confidence = np.max(output)
+
+    return max_confidence
+
 
 # User interaction loop
 print("Welcome to the Chatbot!")
